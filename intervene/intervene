@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/Users/leipzig/miniconda3/envs/cromwell/bin/python
 # -*- coding: utf-8 -*-
 """
 Intervene: a tool for intersection and visualization of multiple genomic region sets
@@ -47,7 +47,7 @@ def main():
         help='Input genomic regions in (BED/GTF/GFF) format or lists of genes/SNPs IDs.\n'
         'For files in a directory use *.<extension>. e.g. *.bed\n\n')
 
-    venn_parser.add_argument('--type', dest='type', default='genomic', choices=('genomic','list'),
+    venn_parser.add_argument('--type', dest='type', default='genomic', choices=('genomic','list','reentrant'),
                   help='Type of input sets. Genomic regions or lists of genes/SNPs. '
                         'Default is "%(default)s"\n')
 
@@ -122,7 +122,7 @@ def main():
         help='Input genomic region file (BED/GTF/GFF) format to compare with input files.')
     '''
 
-    upset_parser.add_argument('--type', dest='type', choices=('genomic','list'),default='genomic',
+    upset_parser.add_argument('--type', dest='type', choices=('genomic','list','reentrant'),default='genomic',
                   help='Type of input sets. Genomic regions or lists of genes/SNPs sets. '
                        'Default is "%(default)s".\n\n') 
    
@@ -215,7 +215,7 @@ def main():
         help='Input genomic regions in (BED/GTF/GFF) format. \n'
         'For files in a directory use *.<extension>. e.g. *.bed\n')
     
-    pairwise_parser.add_argument('--type', dest='type', choices=('genomic','list'),default='genomic',
+    pairwise_parser.add_argument('--type', dest='type', choices=('genomic','list','reentrant'),default='genomic',
                   help='Type of input sets. Genomic regions or lists of genes/SNPs sets. '
                        'Default is "%(default)s".\n\n') 
    
@@ -325,7 +325,7 @@ def main():
     options = parser.parse_args()
 
     if options.cite:
-      cite = """
+      cite = '''
       If you find Intervene tool useful for your research please cite as:
 
       A. Khan and A. Mathelier. 2017. Intervene: a tool for intersection and visualization of multiple gene or genomic region sets. BMC Bioinformatics 18:287. doi:10.1186/s12859-017-1708-7
@@ -348,9 +348,7 @@ def main():
         doi="10.1186/s12859-017-1708-7",
         url="https://doi.org/10.1186/s12859-017-1708-7"
       }
-
-      """
-
+      '''
       sys.stderr.write(cite)
       sys.exit(0)
 
@@ -438,6 +436,8 @@ def main():
         
         if options.type == 'list':
           labels = upset.list_upset(options, label_names)
+        elif options.type == 'reentrant':
+          labels = upset.reentrant_upset(options, label_names)
         else:
           labels = upset.genomic_upset(options, label_names)
         upset.create_r_script(labels, label_names, options)

@@ -14,6 +14,50 @@ from pybedtools import BedTool, helpers
 from intervene import helpers as hlp
 
 
+def reentrant_upset(options, label_names):
+    print("Reentrant upset")
+    input_files = options.input
+    
+    output = options.output
+    
+    kwargs = hlp.map_bedtools_options(options.bedtools_options)
+    
+    N = len(input_files)
+    
+    # Generate a truth table of intersections to calculate 
+    truth_table = [x for x in itertools.product("01", repeat=N)][1:]
+    #[('0', '0', '1'), ('0', '1', '0'), ('0', '1', '1'), ('1', '0', '0'), ('1', '0', '1'), ('1', '1', '0'), ('1', '1', '1')]
+    
+    weights = {}
+
+    for t in truth_table:
+        ones = [BedTool(input_files[i]) for i in range(N) if t[i] =='1']
+        zeros = [BedTool(input_files[i]) for i in range(N) if t[i] =='0']
+        file_name = 'intersect'
+        name_itr = 0
+        for name in t:
+            if name == '1':
+                file_name += '_'+label_names[name_itr]
+            name_itr +=1
+        if os.path.isfile(output+'/sets/'+file_name):
+            vcf = BedTool(output+'/sets/'+file_name)
+            weights[''.join(t)] = vcf.count()
+        else:
+            x = ones[0]
+            if len(ones) > 1:
+                for bed in ones[1:]:
+                    x = x.intersect(bed, u=True, **kwargs)
+            if len(zeros) > 0:
+                for bed in zeros[0:]:
+                    x = x.intersect(bed, v=True, **kwargs)
+            X = (x).count()
+            weights[''.join(t)] = X
+            if options.saveoverlaps:
+                x.moveto(output+'/sets/'+file_name)
+    
+    #weights {'001': 136727, '010': 143223, '011': 42983, '100': 78029, '101': 20063, '110': 333465, '111': 4489977}
+    return(weights)
+
 def genomic_upset(options, label_names):
     '''
     Arguments:
@@ -22,7 +66,7 @@ def genomic_upset(options, label_names):
         label_names - names of input files
     Takes a list of sets a list of the sizes of non-overlapping intersections between them 
     '''
-
+    print("Genomic upset")
     input_files = options.input
     output = options.output
 
@@ -47,6 +91,7 @@ def genomic_upset(options, label_names):
         if len(zeros) > 0:
             #y = zeros[0]
             for bed in zeros[0:]:
+                #print("I am x {0}".format(x))
                 x = x.intersect(bed, v=True, **kwargs)
         X = (x).count()
         weights[''.join(t)] = X
@@ -62,7 +107,7 @@ def genomic_upset(options, label_names):
                     name_itr +=1
                 file_name = ''.join(t)+file_name
                 hlp.create_dir(output+'/sets')
-                x.moveto(output+'/sets/'+file_name+'.bed')
+                x.moveto(output+'/sets/'+file_name)
         
         #delete all temp files
         helpers.cleanup()
@@ -77,6 +122,7 @@ def list_upset(options, label_names):
         label_names - names of input files
     Takes a list of sets a list of the sizes of non-overlapping intersections between them 
     '''
+    print("List upset")
     input_files = options.input
     output = options.output
     S =[]
@@ -177,7 +223,7 @@ def create_r_script(labels, names, options):
 
         shiny_import =  options.output+'/'+str(options.project)+'_'+options.command+'_combinations.txt'
         shiny_file = open(shiny_import, 'w')
-        shiny_file.write("You can go to Intervene Shiny App https://asntech.shinyapps.io/Intervene-app/ and copy/paste the following intersection data to get more interactive figures.\n\n")
+        shiny_file.write("You can go to Intervene Shiny App https://asntech.shinyapps.io/intervene/ and copy/paste the following intersection data to get more interactive figures.\n\n")
         shiny_file.write(shiny)
         shiny_file.close()
     
@@ -264,6 +310,7 @@ def one_vs_rest_intersection(beds, peaks, output, **kwoptions):
     for bed in beds:
         names.append(get_name(bed))
         f.write('\t' + str(get_name(bed)))
+    print(names)
     #main_int.append(names)
 
     peaks = BedTool(peaks[0])
