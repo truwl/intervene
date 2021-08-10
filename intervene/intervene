@@ -1,4 +1,4 @@
-#!/Users/leipzig/miniconda3/envs/cromwell/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Intervene: a tool for intersection and visualization of multiple genomic region sets
